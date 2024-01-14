@@ -7,10 +7,6 @@ struct SendMessage {
     sent_on: u64,
 }
 
-struct Content {
-    size: u32,
-    data: String,
-}
 enum SentMsgState {
     Delivered,
     Read,
@@ -30,10 +26,4 @@ struct StatusUpdate {
     user_id: String,
     status: UserStatus,
     on: u64,
-}
-
-struct Message {
-    sender_id: String,
-    message_id: String,
-    content: Content,
 }
