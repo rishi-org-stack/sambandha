@@ -6,14 +6,18 @@ use std::time::Duration;
 use tokio_stream::{Stream, StreamExt};
 use tonic::transport::Channel;
 
-use pb::{send_service_client::SendServiceClient, SendMessageRequest};
+use pb::{send_service_client::SendServiceClient, Content, SendMessageRequest};
 
-fn greet_requests_iter() -> impl Stream<Item = SendMessageRequest> {
-    tokio_stream::iter(1..usize::MAX).map(|i| SendMessageRequest::default())
+fn greet_requests_iter(num: usize) -> impl Stream<Item = SendMessageRequest> {
+    tokio_stream::iter(0..=num).map(|i| SendMessageRequest {
+        sender_id: format!("rishi:{}", i),
+        reciever_id: "sabitahf".to_string(),
+        ..Default::default()
+    })
 }
 
 async fn bidirectional_streaming_echo(client: &mut SendServiceClient<Channel>, num: usize) {
-    let in_stream = greet_requests_iter().take(num);
+    let in_stream = greet_requests_iter(num);
 
     let response = client.send_msg(in_stream).await.unwrap();
 
@@ -36,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Echo stream that sends 17 requests then graceful end that connection
     println!("\r\nBidirectional stream echo:");
-    bidirectional_streaming_echo(&mut client, 17).await;
+    bidirectional_streaming_echo(&mut client, 5).await;
 
     Ok(())
 }

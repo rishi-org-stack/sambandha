@@ -1,36 +1,43 @@
-use std::collections::{HashMap, VecDeque};
+use std::{
+    borrow::BorrowMut,
+    collections::{HashMap, VecDeque},
+    sync::{Arc, Mutex},
+};
 
-use crate::models;
+type UserQueue = HashMap<String, VecDeque<String>>;
 
-type UserQueue = HashMap<String, VecDeque<models::Message>>;
-
-struct Queue {
-    data: UserQueue,
+pub struct Queue {
+    data: Arc<Mutex<UserQueue>>,
 }
 
 impl Queue {
     pub fn new() -> Queue {
         Queue {
-            data: HashMap::new(),
+            data: Arc::new(Mutex::new(UserQueue::new())),
         }
     }
 
-    pub fn new_queue(&mut self, user_id: String) -> Result<(), String> {
-        self.data.insert(user_id, VecDeque::new());
+    pub fn new_queue(&self, user_id: String) -> Result<(), String> {
+        self.data.lock().unwrap().insert(user_id, VecDeque::new());
         Ok(())
     }
 
-    pub fn insert_msg(&mut self, user_id: String, msg: models::Message) -> Result<(), String> {
-        if !self.data.contains_key(&user_id) {
-            return Err("user not found".to_string());
-        }
+    pub fn insert_msg(&mut self, user_id: String, msg: String) -> Result<(), String> {
+        // if !self.data.lock().unwrap().contains_key(&user_id) {
+        //     return Err("user not found".to_string());
+        // }
 
-        self.data.entry(user_id).and_modify(|v| v.push_back(msg));
+        self.data
+            .lock()
+            .unwrap()
+            .entry(user_id)
+            .and_modify(|v| v.push_back(msg))
+            .or_insert(VecDeque::new());
         Ok(())
     }
 
-    pub fn next_msg(&mut self, user_id: String) -> Result<Option<models::Message>, String> {
-        if let Some(entry) = self.data.get_mut(&user_id) {
+    pub fn next_msg(&mut self, user_id: String) -> Result<Option<String>, String> {
+        if let Some(entry) = self.data.lock().unwrap().get_mut(&user_id) {
             if let Some(msg) = entry.pop_front() {
                 Ok(Some(msg))
             } else {
@@ -39,5 +46,9 @@ impl Queue {
         } else {
             return Err("unhandled error".to_string());
         }
+    }
+
+    pub fn print(&self) {
+        println!("queue: {:#?}", self.data.lock().unwrap())
     }
 }
