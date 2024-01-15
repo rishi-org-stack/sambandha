@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+message SendMessageRequest {
+    string sender_id=1;
+    string reciever_id=2;
+    string pub_key=3;
+    Content content=4;
+    string message_id=5;
+    uint64 sent_on =6;
+
+}
+message Content {
+    uint32 size=1;
+    string data=2;
+}
+enum SentMsgState {
+    Delivered=0;
+    Read=1;
+}
+message SendAckResponse {
+    string message_id=1;
+    SentMsgState state=2;
+    uint64 ack_on=3;
+}
+
+message RegisterEventRequest{
+    string name = 1;
+    string phone =2;
+    string bio=3;
+}
+
+message RegisterEventResponse{
+    string token=1;
+    string pub_key=2;
+}
+
+message UserActionEvent{
+    string status=1;
+    uint64 on=2;
+}
+
+service SendService {
+    rpc RegisterEventHandler(RegisterEventRequest) returns(RegisterEventResponse){}
+    rpc SendEventHandler(stream SendMessageRequest) returns(stream SendAckResponse){}
+}
