@@ -2,21 +2,18 @@ syntax = "proto3";
 
 message SendMessageRequest {
     string sender_id=1;
-    string reciever_id=2;
-    string pub_key=3;
-    Content content=4;
-    string message_id=5;
-    uint64 sent_on =6;
+    string friend_id=2;
+    string message_id=3;
+    string encoded_message=4;
+    uint64 sent_on =5;
 
 }
-message Content {
-    uint32 size=1;
-    string data=2;
-}
+
 enum SentMsgState {
     Delivered=0;
     Read=1;
 }
+
 message SendAckResponse {
     string message_id=1;
     SentMsgState state=2;
@@ -34,12 +31,25 @@ message RegisterEventResponse{
     string pub_key=2;
 }
 
+enum UserState {
+    Online =0;
+    Offline=1;
+}
+
 message UserActionEvent{
-    string status=1;
+    UserState status=1;
     uint64 on=2;
+}
+
+message RecieveMessage{
+    string sender_id=1;
+    string friend_id=2;
+    string message_id=3;
+    string encoded_message=4;
 }
 
 service SendService {
     rpc RegisterEventHandler(RegisterEventRequest) returns(RegisterEventResponse){}
     rpc SendEventHandler(stream SendMessageRequest) returns(stream SendAckResponse){}
+    rpc RecieveMsgEventHandler(UserActionEvent) returns (stream RecieveMessage){}
 }

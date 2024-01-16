@@ -4,23 +4,13 @@ pub struct SendMessageRequest {
     #[prost(string, tag = "1")]
     pub sender_id: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
-    pub reciever_id: ::prost::alloc::string::String,
+    pub friend_id: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
-    pub pub_key: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "4")]
-    pub content: ::core::option::Option<Content>,
-    #[prost(string, tag = "5")]
     pub message_id: ::prost::alloc::string::String,
-    #[prost(uint64, tag = "6")]
+    #[prost(string, tag = "4")]
+    pub encoded_message: ::prost::alloc::string::String,
+    #[prost(uint64, tag = "5")]
     pub sent_on: u64,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Content {
-    #[prost(uint32, tag = "1")]
-    pub size: u32,
-    #[prost(string, tag = "2")]
-    pub data: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -31,6 +21,44 @@ pub struct SendAckResponse {
     pub state: i32,
     #[prost(uint64, tag = "3")]
     pub ack_on: u64,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RegisterEventRequest {
+    #[prost(string, tag = "1")]
+    pub name: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub phone: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub bio: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RegisterEventResponse {
+    #[prost(string, tag = "1")]
+    pub token: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub pub_key: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UserActionEvent {
+    #[prost(enumeration = "UserState", tag = "1")]
+    pub status: i32,
+    #[prost(uint64, tag = "2")]
+    pub on: u64,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RecieveMessage {
+    #[prost(string, tag = "1")]
+    pub sender_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub friend_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub message_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "4")]
+    pub encoded_message: ::prost::alloc::string::String,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -54,6 +82,32 @@ impl SentMsgState {
         match value {
             "Delivered" => Some(Self::Delivered),
             "Read" => Some(Self::Read),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum UserState {
+    Online = 0,
+    Offline = 1,
+}
+impl UserState {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            UserState::Online => "Online",
+            UserState::Offline => "Offline",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "Online" => Some(Self::Online),
+            "Offline" => Some(Self::Offline),
             _ => None,
         }
     }
@@ -143,7 +197,32 @@ pub mod send_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn send_msg(
+        pub async fn register_event_handler(
+            &mut self,
+            request: impl tonic::IntoRequest<super::RegisterEventRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::RegisterEventResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/SendService/RegisterEventHandler",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("SendService", "RegisterEventHandler"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn send_event_handler(
             &mut self,
             request: impl tonic::IntoStreamingRequest<
                 Message = super::SendMessageRequest,
@@ -162,10 +241,38 @@ pub mod send_service_client {
                     )
                 })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/SendService/SendMsg");
+            let path = http::uri::PathAndQuery::from_static(
+                "/SendService/SendEventHandler",
+            );
             let mut req = request.into_streaming_request();
-            req.extensions_mut().insert(GrpcMethod::new("SendService", "SendMsg"));
+            req.extensions_mut()
+                .insert(GrpcMethod::new("SendService", "SendEventHandler"));
             self.inner.streaming(req, path, codec).await
+        }
+        pub async fn recieve_msg_event_handler(
+            &mut self,
+            request: impl tonic::IntoRequest<super::UserActionEvent>,
+        ) -> std::result::Result<
+            tonic::Response<tonic::codec::Streaming<super::RecieveMessage>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/SendService/RecieveMsgEventHandler",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("SendService", "RecieveMsgEventHandler"));
+            self.inner.server_streaming(req, path, codec).await
         }
     }
 }
@@ -176,16 +283,39 @@ pub mod send_service_server {
     /// Generated trait containing gRPC methods that should be implemented for use with SendServiceServer.
     #[async_trait]
     pub trait SendService: Send + Sync + 'static {
-        /// Server streaming response type for the SendMsg method.
-        type SendMsgStream: tonic::codegen::tokio_stream::Stream<
+        async fn register_event_handler(
+            &self,
+            request: tonic::Request<super::RegisterEventRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::RegisterEventResponse>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the SendEventHandler method.
+        type SendEventHandlerStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::SendAckResponse, tonic::Status>,
             >
             + Send
             + 'static;
-        async fn send_msg(
+        async fn send_event_handler(
             &self,
             request: tonic::Request<tonic::Streaming<super::SendMessageRequest>>,
-        ) -> std::result::Result<tonic::Response<Self::SendMsgStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::SendEventHandlerStream>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the RecieveMsgEventHandler method.
+        type RecieveMsgEventHandlerStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::RecieveMessage, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        async fn recieve_msg_event_handler(
+            &self,
+            request: tonic::Request<super::UserActionEvent>,
+        ) -> std::result::Result<
+            tonic::Response<Self::RecieveMsgEventHandlerStream>,
+            tonic::Status,
+        >;
     }
     #[derive(Debug)]
     pub struct SendServiceServer<T: SendService> {
@@ -266,15 +396,62 @@ pub mod send_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/SendService/SendMsg" => {
+                "/SendService/RegisterEventHandler" => {
                     #[allow(non_camel_case_types)]
-                    struct SendMsgSvc<T: SendService>(pub Arc<T>);
+                    struct RegisterEventHandlerSvc<T: SendService>(pub Arc<T>);
+                    impl<
+                        T: SendService,
+                    > tonic::server::UnaryService<super::RegisterEventRequest>
+                    for RegisterEventHandlerSvc<T> {
+                        type Response = super::RegisterEventResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::RegisterEventRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as SendService>::register_event_handler(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = RegisterEventHandlerSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/SendService/SendEventHandler" => {
+                    #[allow(non_camel_case_types)]
+                    struct SendEventHandlerSvc<T: SendService>(pub Arc<T>);
                     impl<
                         T: SendService,
                     > tonic::server::StreamingService<super::SendMessageRequest>
-                    for SendMsgSvc<T> {
+                    for SendEventHandlerSvc<T> {
                         type Response = super::SendAckResponse;
-                        type ResponseStream = T::SendMsgStream;
+                        type ResponseStream = T::SendEventHandlerStream;
                         type Future = BoxFuture<
                             tonic::Response<Self::ResponseStream>,
                             tonic::Status,
@@ -287,7 +464,8 @@ pub mod send_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as SendService>::send_msg(&inner, request).await
+                                <T as SendService>::send_event_handler(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -299,7 +477,7 @@ pub mod send_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = SendMsgSvc(inner);
+                        let method = SendEventHandlerSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -311,6 +489,57 @@ pub mod send_service_server {
                                 max_encoding_message_size,
                             );
                         let res = grpc.streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/SendService/RecieveMsgEventHandler" => {
+                    #[allow(non_camel_case_types)]
+                    struct RecieveMsgEventHandlerSvc<T: SendService>(pub Arc<T>);
+                    impl<
+                        T: SendService,
+                    > tonic::server::ServerStreamingService<super::UserActionEvent>
+                    for RecieveMsgEventHandlerSvc<T> {
+                        type Response = super::RecieveMessage;
+                        type ResponseStream = T::RecieveMsgEventHandlerStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::UserActionEvent>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as SendService>::recieve_msg_event_handler(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = RecieveMsgEventHandlerSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
