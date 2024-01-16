@@ -48,7 +48,7 @@ message RecieveMessage{
     string encoded_message=4;
 }
 
-service SendService {
+service MessagingService {
     rpc RegisterEventHandler(RegisterEventRequest) returns(RegisterEventResponse){}
     rpc SendEventHandler(stream SendMessageRequest) returns(stream SendAckResponse){}
     rpc RecieveMsgEventHandler(UserActionEvent) returns (stream RecieveMessage){}
