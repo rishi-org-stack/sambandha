@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    api::SendMessageRequest,
+    api::{RegisterEventRequest, SendMessageRequest},
     message_queue::{self, Queue},
 };
 
@@ -28,22 +28,22 @@ impl Service {
     pub fn send(&self, send_message_request: SendMessageRequest) -> Result<(), String> {
         if !self.is_friend(
             send_message_request.sender_id.as_str(),
-            send_message_request.reciever_id.as_str(),
+            send_message_request.friend_id.as_str(),
         ) {
             return Err("you are not friend".to_string());
         }
 
-        if !self.is_authorized(
-            send_message_request.reciever_id.as_str(),
-            send_message_request.pub_key.as_str(),
-        ) {
-            return Err("you are not authorized".to_string());
-        }
+        // if !self.is_authorized(
+        //     send_message_request.reciever_id.as_str(),
+        //     send_message_request.pub_key.as_str(),
+        // ) {
+        //     return Err("you are not authorized".to_string());
+        // }
         self.queue
             .lock()
             .unwrap()
             .insert_msg(
-                send_message_request.reciever_id,
+                send_message_request.friend_id,
                 send_message_request.sender_id,
             )
             .unwrap();
@@ -51,5 +51,15 @@ impl Service {
         self.queue.lock().unwrap().print();
         Ok(())
         //push msg in message queue
+    }
+
+    pub fn register_user(&self, register_user_request: RegisterEventRequest) -> Result<(), String> {
+        self.queue
+            .lock()
+            .unwrap()
+            .new_queue(register_user_request.phone)
+            .unwrap();
+        self.queue.lock().unwrap().print();
+        Ok(())
     }
 }

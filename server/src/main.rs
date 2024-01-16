@@ -13,8 +13,9 @@ use std::{
 };
 
 use api::{
-    send_service_server::{SendService, SendServiceServer},
-    SendAckResponse, SendMessageRequest,
+    messaging_service_server::{MessagingService, MessagingServiceServer},
+    RecieveMessage, RegisterEventRequest, RegisterEventResponse, SendAckResponse,
+    SendMessageRequest, UserActionEvent,
 };
 use message_queue::Queue;
 use send_service_impl::Service;
@@ -42,14 +43,25 @@ impl SendHandler {
 //     }
 // }
 
-type ResponseStream = Pin<Box<dyn Stream<Item = Result<SendAckResponse, Status>> + Send>>;
+type SendAckResponseStream = Pin<Box<dyn Stream<Item = Result<SendAckResponse, Status>> + Send>>;
+type RecieveMessageResponseStream =
+    Pin<Box<dyn Stream<Item = Result<RecieveMessage, Status>> + Send>>;
 #[tonic::async_trait]
-impl SendService for SendHandler {
-    type SendMsgStream = ResponseStream;
-    async fn send_msg(
+impl MessagingService for SendHandler {
+    // type SendMsgStream = ResponseStream;
+    async fn register_event_handler(
+        &self,
+        request: tonic::Request<RegisterEventRequest>,
+    ) -> std::result::Result<tonic::Response<RegisterEventResponse>, tonic::Status> {
+        self.svc.register_user(request.into_inner()).unwrap();
+        Ok(Response::new(RegisterEventResponse::default()))
+    }
+    /// Server streaming response type for the SendEventHandler method.
+    type SendEventHandlerStream = SendAckResponseStream;
+    async fn send_event_handler(
         &self,
         request: tonic::Request<tonic::Streaming<SendMessageRequest>>,
-    ) -> std::result::Result<tonic::Response<Self::SendMsgStream>, tonic::Status> {
+    ) -> std::result::Result<tonic::Response<Self::SendEventHandlerStream>, tonic::Status> {
         println!("EchoServer::bidirectional_streaming_echo");
 
         let mut in_stream = request.into_inner();
@@ -84,7 +96,21 @@ impl SendService for SendHandler {
         println!("\tstream ended");
 
         let out_stream = ReceiverStream::new(rx);
-        Ok(Response::new(Box::pin(out_stream) as Self::SendMsgStream))
+        Ok(Response::new(
+            Box::pin(out_stream) as Self::SendEventHandlerStream
+        ))
+    }
+    /// Server streaming response type for the RecieveMsgEventHandler method.
+    type RecieveMsgEventHandlerStream = RecieveMessageResponseStream; //: tonic::codegen::tokio_stream::Stream<
+                                                                      //         Item = std::result::Result<RecieveMessage, tonic::Status>,
+                                                                      //     > + Send
+                                                                      //     + 'static;
+    async fn recieve_msg_event_handler(
+        &self,
+        request: tonic::Request<UserActionEvent>,
+    ) -> std::result::Result<tonic::Response<Self::RecieveMsgEventHandlerStream>, tonic::Status>
+    {
+        todo!()
     }
 }
 
@@ -95,7 +121,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "127.0.0.1:3000".parse().unwrap();
 
     let greeter = SendHandler::new();
-    let greet_server = SendServiceServer::new(greeter);
+    let greet_server = MessagingServiceServer::new(greeter);
 
     println!("GreeterServer listening on {}", addr);
 

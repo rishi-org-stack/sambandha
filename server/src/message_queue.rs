@@ -23,16 +23,15 @@ impl Queue {
     }
 
     pub fn insert_msg(&mut self, user_id: String, msg: String) -> Result<(), String> {
-        // if !self.data.lock().unwrap().contains_key(&user_id) {
-        //     return Err("user not found".to_string());
-        // }
+        if !self.data.lock().unwrap().contains_key(&user_id) {
+            return Err("user not found".to_string());
+        }
 
         self.data
             .lock()
             .unwrap()
             .entry(user_id)
-            .and_modify(|v| v.push_back(msg))
-            .or_insert(VecDeque::new());
+            .and_modify(|v| v.push_back(msg));
         Ok(())
     }
 
