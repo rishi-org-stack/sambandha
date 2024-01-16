@@ -113,15 +113,15 @@ impl UserState {
     }
 }
 /// Generated client implementations.
-pub mod send_service_client {
+pub mod messaging_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
     use tonic::codegen::http::Uri;
     #[derive(Debug, Clone)]
-    pub struct SendServiceClient<T> {
+    pub struct MessagingServiceClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl SendServiceClient<tonic::transport::Channel> {
+    impl MessagingServiceClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -132,7 +132,7 @@ pub mod send_service_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> SendServiceClient<T>
+    impl<T> MessagingServiceClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::Error: Into<StdError>,
@@ -150,7 +150,7 @@ pub mod send_service_client {
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
-        ) -> SendServiceClient<InterceptedService<T, F>>
+        ) -> MessagingServiceClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -164,7 +164,7 @@ pub mod send_service_client {
                 http::Request<tonic::body::BoxBody>,
             >>::Error: Into<StdError> + Send + Sync,
         {
-            SendServiceClient::new(InterceptedService::new(inner, interceptor))
+            MessagingServiceClient::new(InterceptedService::new(inner, interceptor))
         }
         /// Compress requests with the given encoding.
         ///
@@ -215,11 +215,11 @@ pub mod send_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/SendService/RegisterEventHandler",
+                "/MessagingService/RegisterEventHandler",
             );
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("SendService", "RegisterEventHandler"));
+                .insert(GrpcMethod::new("MessagingService", "RegisterEventHandler"));
             self.inner.unary(req, path, codec).await
         }
         pub async fn send_event_handler(
@@ -242,11 +242,11 @@ pub mod send_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/SendService/SendEventHandler",
+                "/MessagingService/SendEventHandler",
             );
             let mut req = request.into_streaming_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("SendService", "SendEventHandler"));
+                .insert(GrpcMethod::new("MessagingService", "SendEventHandler"));
             self.inner.streaming(req, path, codec).await
         }
         pub async fn recieve_msg_event_handler(
@@ -267,22 +267,22 @@ pub mod send_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/SendService/RecieveMsgEventHandler",
+                "/MessagingService/RecieveMsgEventHandler",
             );
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("SendService", "RecieveMsgEventHandler"));
+                .insert(GrpcMethod::new("MessagingService", "RecieveMsgEventHandler"));
             self.inner.server_streaming(req, path, codec).await
         }
     }
 }
 /// Generated server implementations.
-pub mod send_service_server {
+pub mod messaging_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    /// Generated trait containing gRPC methods that should be implemented for use with SendServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with MessagingServiceServer.
     #[async_trait]
-    pub trait SendService: Send + Sync + 'static {
+    pub trait MessagingService: Send + Sync + 'static {
         async fn register_event_handler(
             &self,
             request: tonic::Request<super::RegisterEventRequest>,
@@ -318,7 +318,7 @@ pub mod send_service_server {
         >;
     }
     #[derive(Debug)]
-    pub struct SendServiceServer<T: SendService> {
+    pub struct MessagingServiceServer<T: MessagingService> {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
@@ -326,7 +326,7 @@ pub mod send_service_server {
         max_encoding_message_size: Option<usize>,
     }
     struct _Inner<T>(Arc<T>);
-    impl<T: SendService> SendServiceServer<T> {
+    impl<T: MessagingService> MessagingServiceServer<T> {
         pub fn new(inner: T) -> Self {
             Self::from_arc(Arc::new(inner))
         }
@@ -378,9 +378,9 @@ pub mod send_service_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>> for SendServiceServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for MessagingServiceServer<T>
     where
-        T: SendService,
+        T: MessagingService,
         B: Body + Send + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
@@ -396,11 +396,11 @@ pub mod send_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/SendService/RegisterEventHandler" => {
+                "/MessagingService/RegisterEventHandler" => {
                     #[allow(non_camel_case_types)]
-                    struct RegisterEventHandlerSvc<T: SendService>(pub Arc<T>);
+                    struct RegisterEventHandlerSvc<T: MessagingService>(pub Arc<T>);
                     impl<
-                        T: SendService,
+                        T: MessagingService,
                     > tonic::server::UnaryService<super::RegisterEventRequest>
                     for RegisterEventHandlerSvc<T> {
                         type Response = super::RegisterEventResponse;
@@ -414,7 +414,10 @@ pub mod send_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as SendService>::register_event_handler(&inner, request)
+                                <T as MessagingService>::register_event_handler(
+                                        &inner,
+                                        request,
+                                    )
                                     .await
                             };
                             Box::pin(fut)
@@ -443,11 +446,11 @@ pub mod send_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/SendService/SendEventHandler" => {
+                "/MessagingService/SendEventHandler" => {
                     #[allow(non_camel_case_types)]
-                    struct SendEventHandlerSvc<T: SendService>(pub Arc<T>);
+                    struct SendEventHandlerSvc<T: MessagingService>(pub Arc<T>);
                     impl<
-                        T: SendService,
+                        T: MessagingService,
                     > tonic::server::StreamingService<super::SendMessageRequest>
                     for SendEventHandlerSvc<T> {
                         type Response = super::SendAckResponse;
@@ -464,7 +467,7 @@ pub mod send_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as SendService>::send_event_handler(&inner, request)
+                                <T as MessagingService>::send_event_handler(&inner, request)
                                     .await
                             };
                             Box::pin(fut)
@@ -493,11 +496,11 @@ pub mod send_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/SendService/RecieveMsgEventHandler" => {
+                "/MessagingService/RecieveMsgEventHandler" => {
                     #[allow(non_camel_case_types)]
-                    struct RecieveMsgEventHandlerSvc<T: SendService>(pub Arc<T>);
+                    struct RecieveMsgEventHandlerSvc<T: MessagingService>(pub Arc<T>);
                     impl<
-                        T: SendService,
+                        T: MessagingService,
                     > tonic::server::ServerStreamingService<super::UserActionEvent>
                     for RecieveMsgEventHandlerSvc<T> {
                         type Response = super::RecieveMessage;
@@ -512,7 +515,7 @@ pub mod send_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as SendService>::recieve_msg_event_handler(
+                                <T as MessagingService>::recieve_msg_event_handler(
                                         &inner,
                                         request,
                                     )
@@ -559,7 +562,7 @@ pub mod send_service_server {
             }
         }
     }
-    impl<T: SendService> Clone for SendServiceServer<T> {
+    impl<T: MessagingService> Clone for MessagingServiceServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self {
@@ -571,7 +574,7 @@ pub mod send_service_server {
             }
         }
     }
-    impl<T: SendService> Clone for _Inner<T> {
+    impl<T: MessagingService> Clone for _Inner<T> {
         fn clone(&self) -> Self {
             Self(Arc::clone(&self.0))
         }
@@ -581,7 +584,7 @@ pub mod send_service_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: SendService> tonic::server::NamedService for SendServiceServer<T> {
-        const NAME: &'static str = "SendService";
+    impl<T: MessagingService> tonic::server::NamedService for MessagingServiceServer<T> {
+        const NAME: &'static str = "MessagingService";
     }
 }
