@@ -101,16 +101,27 @@ impl MessagingService for SendHandler {
         ))
     }
     /// Server streaming response type for the RecieveMsgEventHandler method.
-    type RecieveMsgEventHandlerStream = RecieveMessageResponseStream; //: tonic::codegen::tokio_stream::Stream<
-                                                                      //         Item = std::result::Result<RecieveMessage, tonic::Status>,
-                                                                      //     > + Send
-                                                                      //     + 'static;
+    type RecieveMsgEventHandlerStream = RecieveMessageResponseStream;
     async fn recieve_msg_event_handler(
         &self,
         request: tonic::Request<UserActionEvent>,
     ) -> std::result::Result<tonic::Response<Self::RecieveMsgEventHandlerStream>, tonic::Status>
     {
-        todo!()
+        let userActionEvent = request.into_inner();
+        let (tx, rx) = mpsc::channel(128);
+        if userActionEvent.status == 1 {
+            loop {
+                self.svc.top_msg(userActionEvent.user_id.clone());
+                tx.send(Ok(RecieveMessage::default()))
+                    .await
+                    .expect("failed to send msg")
+            }
+        };
+
+        let out_stream = ReceiverStream::new(rx);
+        Ok(Response::new(
+            Box::pin(out_stream) as self::RecieveMessageResponseStream
+        ))
     }
 }
 

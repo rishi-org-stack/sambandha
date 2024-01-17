@@ -8,6 +8,7 @@ use tonic::{transport::Channel, Request};
 
 use pb::{
     messaging_service_client::MessagingServiceClient, RegisterEventRequest, SendMessageRequest,
+    UserActionEvent,
 };
 
 fn greet_requests_iter(num: usize) -> impl Stream<Item = SendMessageRequest> {
@@ -42,6 +43,24 @@ async fn register_user(client: &mut MessagingServiceClient<Channel>) {
         .unwrap();
 }
 
+async fn server_streaming_messag(client: &mut MessagingServiceClient<Channel>) {
+    let response = client
+        .recieve_msg_event_handler(UserActionEvent {
+            user_id: "9874137031".to_string(),
+            status: 1,
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+
+    let mut resp_stream = response.into_inner();
+
+    while let Some(received) = resp_stream.next().await {
+        let received = received.unwrap();
+        println!("\treceived message: `{:#?}`", received);
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut client = MessagingServiceClient::connect("http://0.0.0.0:3000")
@@ -49,11 +68,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
 
     println!("Streaming echo:");
-    tokio::time::sleep(Duration::from_secs(1)).await; //do not mess server println functions
-    register_user(&mut client).await;
-    // Echo stream that sends 17 requests then graceful end that connection
+    tokio::time::sleep(Duration::from_secs(1)).await;
+    // register_user(&mut client).await;
     println!("\r\nBidirectional stream echo:");
-    bidirectional_streaming_echo(&mut client, 5).await;
+    // bidirectional_streaming_echo(&mut client, 5).await;
+    server_streaming_messag(&mut client).await;
 
     Ok(())
 }

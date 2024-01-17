@@ -62,4 +62,12 @@ impl Service {
         self.queue.lock().unwrap().print();
         Ok(())
     }
+    pub fn top_msg(&self, user_id: String) {
+        let msg = self.queue.lock().unwrap().next_msg(user_id).unwrap();
+        if let Some(m) = msg {
+            println!("msg: {}", m)
+        } else {
+            // println!("no msg")
+        }
+    }
 }
