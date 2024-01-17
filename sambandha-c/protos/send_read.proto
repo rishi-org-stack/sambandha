@@ -37,8 +37,9 @@ enum UserState {
 }
 
 message UserActionEvent{
-    UserState status=1;
-    uint64 on=2;
+    string user_id=1;
+    UserState status=2;
+    uint64 on=3;
 }
 
 message RecieveMessage{

@@ -43,9 +43,11 @@ pub struct RegisterEventResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UserActionEvent {
-    #[prost(enumeration = "UserState", tag = "1")]
+    #[prost(string, tag = "1")]
+    pub user_id: ::prost::alloc::string::String,
+    #[prost(enumeration = "UserState", tag = "2")]
     pub status: i32,
-    #[prost(uint64, tag = "2")]
+    #[prost(uint64, tag = "3")]
     pub on: u64,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
